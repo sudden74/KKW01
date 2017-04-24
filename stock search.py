@@ -4,6 +4,13 @@ import time
 import statistics
 import datetime
 
+# Pycharm 에러에 대한 workaround - 'Unused import statement'
+# noinspection PyUnresolvedReferences
+import numpy as np
+import pandas as pd
+from pandas import DataFrame
+
+
 class XASessionEventHandler:
     login_state = 0
 
@@ -14,18 +21,19 @@ class XASessionEventHandler:
         else:
             print("로그인 실패")
 
+
 class XAQueryEventHandlerT1833:
     query_state = 0
 
     def OnReceiveData(self, code):
         XAQueryEventHandlerT1833.query_state = 1
 
+
 class XAQueryEventHandlerT1305:
     query_state = 0
 
     def OnReceiveData(self, code):
         XAQueryEventHandlerT1833.query_state = 1
-
 
 
 '''
@@ -53,19 +61,16 @@ class XAQueryEvents:
         print("ReceiveMessage")
 '''
 
-
-
-
 # ----------------------------------------------------------------------------
 # login
 # ----------------------------------------------------------------------------
-id = input( "아이디: ")
-passwd = input( "비밀번호: ")
-cert_passwd = input( "공인인증서: ")
+id = input("아이디: ")
+passwd = input("비밀번호: ")
+cert_passwd = input("공인인증서: ")
 
-#id = "아이디"
-#passwd = "비밀번호"
-#cert_passwd = "공인인증서"
+# id = "아이디"
+# passwd = "비밀번호"
+# cert_passwd = "공인인증서"
 
 instXASession = win32com.client.DispatchWithEvents("XA_Session.XASession", XASessionEventHandler)
 instXASession.ConnectServer("hts.ebestsec.co.kr", 20001)
@@ -87,10 +92,6 @@ while XAQueryEventHandlerT1833.query_state == 0:
     pythoncom.PumpWaitingMessages()
 
 count = instXAQueryT1833.GetBlockCount("t1833OutBlock1")
-
-import pandas as pd
-from pandas import DataFrame
-import numpy as np
 
 dataList = []
 
@@ -114,7 +115,7 @@ print(stock)
 # t1305 가격정보 추가: 기준일자(전일), 시가, 고가, 저가, 종가, 거래대금, 시가총액
 # ----------------------------------------------------------------------------
 
-    #1. TR코드 t1305로 종목코드의 기준일자(전일), 시가, 고가, 저가, 종가, 거래대금, 시가총액을 조회
+# 1. TR코드 t1305로 종목코드의 기준일자(전일), 시가, 고가, 저가, 종가, 거래대금, 시가총액을 조회
 
 p_dataList = []
 
@@ -125,27 +126,27 @@ for index, row in stock.iterrows():
     instXAQueryT1305 = win32com.client.DispatchWithEvents("XA_DataSet.XAQuery", XAQueryEventHandlerT1305)
     instXAQueryT1305.ResFileName = "C:\\eBEST\\xingAPI\\Res\\t1305.res"
 
-    instXAQueryT1305.SetFieldData("t1305InBlock", "shcode", 0, row['종목코드']) #종목코드
-    instXAQueryT1305.SetFieldData("t1305InBlock", "dwmcode", 0, "1") #일주월구분
-    instXAQueryT1305.SetFieldData("t1305InBlock", "cnt", 0, "2") #날짜
+    instXAQueryT1305.SetFieldData("t1305InBlock", "shcode", 0, row['종목코드'])  # 종목코드
+    instXAQueryT1305.SetFieldData("t1305InBlock", "dwmcode", 0, "1")  # 일주월구분
+    instXAQueryT1305.SetFieldData("t1305InBlock", "cnt", 0, "2")  # 날짜
 
-    #t1305 요청
+    # t1305 요청
     instXAQueryT1305.Request(False)
 
     while XAQueryEventHandlerT1305.query_state == 0:
         pythoncom.PumpWaitingMessages()
 
-    date = instXAQueryT1305.GetFieldData("t1305OutBlock1", "date", 1)        #일자
-    open = instXAQueryT1305.GetFieldData("t1305OutBlock1", "open", 1)        #시가
-    high = instXAQueryT1305.GetFieldData("t1305OutBlock1", "high", 1)        #고가
-    low = instXAQueryT1305.GetFieldData("t1305OutBlock1", "low", 1)        #저가
-    close = instXAQueryT1305.GetFieldData("t1305OutBlock1", "close", 1)        #종가
-    value = instXAQueryT1305.GetFieldData("t1305OutBlock1", "value", 1)        #거래대금
-    marketcap = instXAQueryT1305.GetFieldData("t1305OutBlock1", "marketcap", 1)        #시가총액
+    date = instXAQueryT1305.GetFieldData("t1305OutBlock1", "date", 1)  # 일자
+    open = instXAQueryT1305.GetFieldData("t1305OutBlock1", "open", 1)  # 시가
+    high = instXAQueryT1305.GetFieldData("t1305OutBlock1", "high", 1)  # 고가
+    low = instXAQueryT1305.GetFieldData("t1305OutBlock1", "low", 1)  # 저가
+    close = instXAQueryT1305.GetFieldData("t1305OutBlock1", "close", 1)  # 종가
+    value = instXAQueryT1305.GetFieldData("t1305OutBlock1", "value", 1)  # 거래대금
+    marketcap = instXAQueryT1305.GetFieldData("t1305OutBlock1", "marketcap", 1)  # 시가총액
 
     print(i, shcode, date, open, high, low, close, value, marketcap)
 
-    #2. price dataframe 생성
+    # 2. price dataframe 생성
     p_data = [i, shcode, date, open, high, low, close, value, marketcap]
     print(p_data)
 
@@ -154,8 +155,8 @@ for index, row in stock.iterrows():
 price = pd.DataFrame(p_dataList, columns=['순서', '종목코드', '일자', '시가', '고가', '저가', '종가', '거래대금', '시가총액'])
 print(price)
 
-    #3. stock dataframe과 종목코드를 key로 merge
-selection = pd.merge(stock, price, on = 'shcode', how = 'inner')
+# 3. stock dataframe과 종목코드를 key로 merge
+selection = pd.merge(stock, price, on='shcode', how='inner')
 
 # ----------------------------------------------------------------------------
 # merge한 데이터프레임을 파일로 생성
