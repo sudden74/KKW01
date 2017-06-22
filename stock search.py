@@ -125,13 +125,16 @@ print("가격정보 연동 시작")
 
 for index, row in stock.iterrows():
 
-#XAQuery Object는 종목코드만큼 생성해야 함
+# XAQuery object는 종목코드만큼 생성해야 함
+# 종목수만큼 object를 생성하고, eBest api 호출 --> 데이터를 포함한 object list 생성
+# object list를 loop 돌면서 데이터를 추출하여, 데이터프레임을 생성함
+
+    j = j + 1
     instXAQueryT1305 = win32com.client.DispatchWithEvents("XA_DataSet.XAQuery", XAQueryEventHandlerT1305)
     instXAQueryT1305.ResFileName = "C:\\eBEST\\xingAPI\\Res\\t1305.res"
 
     print("start of loop")
 
-    j = j + 1
     print(j, row.ix[0])
 
 # SetFieldData가 변경되지 않음
