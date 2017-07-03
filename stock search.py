@@ -10,33 +10,6 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
-
-class XASessionEventHandler:
-    login_state = 0
-
-    def OnLogin(self, code, msg):
-        if code == "0000":
-            print("로그인 성공")
-            XASessionEventHandler.login_state = 1
-        else:
-            print("로그인 실패")
-
-
-class XAQueryEventHandlerT1833:
-    query_state = 0
-
-    def OnReceiveData(self, code):
-        XAQueryEventHandlerT1833.query_state = 1
-
-
-class XAQueryEventHandlerT1305:
-    query_state = 0
-
-    def OnReceiveData(self, code):
-        XAQueryEventHandlerT1305.query_state = 1
-
-
-'''
 class XASessionEvents:
     logInState = 0
     def OnLogin(self, code, msg):
@@ -59,11 +32,55 @@ class XAQueryEvents:
         XAQueryEvents.queryState = 1
     def OnReceiveMessage(self, systemError, mesageCode, message):
         print("ReceiveMessage")
-'''
+
+
+# T1305 호출을 위한 class
+class XAQuery_t1305():
+    
+    def __init__(self):
+        self.event  = win32com.client.DispatchWithEvents("XA_DataSet.XAQuery", XAQueryEvents)
+        self.event.parent = proxy(self)
+        self.flag = False
+        self.event.LoadFromResFile("C:\\eBEST\\xingAPI\\Res\\t1305.res")
+    
+    def Request(self,bNext=False):
+        self.event.Request(bNext)
+        self.flag = True
+        while self.flag:
+        pythoncom.PumpWaitingMessages()
+    
+    def SetFieldData(self, market, choice):
+        self.event.SetFieldData('t1305InBlock','shcode', 0, shcode) # 종목코드
+        self.event.SetFieldData('t1305InBlock','dwmcode', 0, "1") # 일주월구분
+        self.event.SetFieldData('t1305InBlock','cnt', 0, "1") # 날짜
+
+    def GetFieldData(self,szBlockName,szFieldName,nOccur=-1):
+        if nOccur == -1:
+        return self.event.GetFieldData(szBlockName,szFieldName)
+        else:
+        return self.event.GetFieldData(szBlockName,szFieldName,nOccur)
+    
+    def OnReceive(self):
+        self.dataReturn = [] # List
+        self.idx = self.event.GetFieldData('t1305OutBlock','idx',0)
+
+        nCount = self.event.GetBlockCount('t1305OutBlock1')
+        for i in range(nCount):
+            data = {} # Data Dictionary
+            data['date'] = self.GetFieldData('t1305OutBlock1','date',i)
+            data['open'] = str(self.GetFieldData('t1305OutBlock1','open',i))
+            data['high'] = float(self.GetFieldData('t1305OutBlock1','high',i))
+            data['low'] = float(self.GetFieldData('t1305OutBlock1','low',i))
+            data['close'] = float(self.GetFieldData('t1305OutBlock1','close',i))
+            data['value'] = float(self.GetFieldData('t1305OutBlock1','value',i))
+            data['marketcap'] = float(self.GetFieldData('t1305OutBlock1','marketcap',i))
+
+            self.dataReturn.append(data)
 
 # ----------------------------------------------------------------------------
 # login
 # ----------------------------------------------------------------------------
+
 id = input("아이디: ")
 passwd = input("비밀번호: ")
 cert_passwd = input("공인인증서: ")
@@ -72,23 +89,23 @@ cert_passwd = input("공인인증서: ")
 # passwd = "비밀번호"
 # cert_passwd = "공인인증서"
 
-instXASession = win32com.client.DispatchWithEvents("XA_Session.XASession", XASessionEventHandler)
+instXASession = win32com.client.DispatchWithEvents("XA_Session.XASession", XASessionEvents)
 instXASession.ConnectServer("hts.ebestsec.co.kr", 20001)
 instXASession.Login(id, passwd, cert_passwd, 0, 0)
 
-while XASessionEventHandler.login_state == 0:
+while XASessionEvents.login_state == 0:
     pythoncom.PumpWaitingMessages()
 
 # ----------------------------------------------------------------------------
 # t1833 종목 가져오기
 # ----------------------------------------------------------------------------
-instXAQueryT1833 = win32com.client.DispatchWithEvents("XA_DataSet.XAQuery", XAQueryEventHandlerT1833)
+instXAQueryT1833 = win32com.client.DispatchWithEvents("XA_DataSet.XAQuery", XAQueryEvents)
 instXAQueryT1833.ResFileName = "C:\\eBEST\\xingAPI\\Res\\t1833.res"
 
 sFile = "C:\\eBEST\\xingAPI\\Res\\ConditionToApi_NEW.ADF"
 instXAQueryT1833.RequestService("t1833", sFile)
 
-while XAQueryEventHandlerT1833.query_state == 0:
+while XAQueryEvents.query_state == 0:
     pythoncom.PumpWaitingMessages()
 
 count = instXAQueryT1833.GetBlockCount("t1833OutBlock1")
@@ -129,52 +146,17 @@ for index, row in stock.iterrows():
 # 종목수만큼 object를 생성하고, eBest api 호출 --> 데이터를 포함한 object list 생성
 # object list를 loop 돌면서 데이터를 추출하여, 데이터프레임을 생성함
 
-    j = j + 1
-    instXAQueryT1305 = win32com.client.DispatchWithEvents("XA_DataSet.XAQuery", XAQueryEventHandlerT1305)
-    instXAQueryT1305.ResFileName = "C:\\eBEST\\xingAPI\\Res\\t1305.res"
+XAQuery = xing.XAQuery_t3341()
+XAQuery.SetFieldData(market, choice)
+XAQuery.Request()
 
-    print("start of loop")
-
-    print(j, row.ix[0])
-
-# SetFieldData가 변경되지 않음
-# instXAQueryT1305를 계속해서 terminate하고 새로 생성해주어야 하나?
-    instXAQueryT1305.SetFieldData("t1305InBlock", "shcode", 0, row.ix[0])  # 종목코드
-    instXAQueryT1305.SetFieldData("t1305InBlock", "dwmcode", 0, "1")  # 일주월구분
-    instXAQueryT1305.SetFieldData("t1305InBlock", "cnt", 0, "1")  # 날짜
-
-    # t1305 요청
-    instXAQueryT1305.Request(False)
-
-    while XAQueryEventHandlerT1305.query_state == 0:
-        pythoncom.PumpWaitingMessages()
-
-    date = instXAQueryT1305.GetFieldData("t1305OutBlock1", "date", 0)  # 일자
-    open = instXAQueryT1305.GetFieldData("t1305OutBlock1", "open", 0)  # 시가
-    high = instXAQueryT1305.GetFieldData("t1305OutBlock1", "high", 0)  # 고가
-    low = instXAQueryT1305.GetFieldData("t1305OutBlock1", "low", 0)  # 저가
-    close = instXAQueryT1305.GetFieldData("t1305OutBlock1", "close", 0)  # 종가
-    value = instXAQueryT1305.GetFieldData("t1305OutBlock1", "value", 0)  # 거래대금
-    marketcap = instXAQueryT1305.GetFieldData("t1305OutBlock1", "marketcap", 0)  # 시가총액
-
-    print("//연동 값 출력")
-    print(i, shcode, date, open, high, low, close, value, marketcap)
-
-    # 2. price dataframe 생성
-    p_data = [i, shcode, date, open, high, low, close, value, marketcap]
-    print("//가격 리스트 출력")
-    print(p_data)
-
-    p_dataList.append(p_data)
-    print("//가격 데이터프레임 출력")
-    print(p_dataList)
-
-    print("end of loop")
-
-    time.sleep(1)
+time.sleep(1)
 
 price = pd.DataFrame(p_dataList, columns=['순서', '종목코드', '일자', '시가', '고가', '저가', '종가', '거래대금', '시가총액'])
 print(price)
+'''
+
+
 '''
 # 3. stock dataframe과 종목코드를 key로 merge
 selection = pd.merge(stock, price, on='shcode', how='inner')
