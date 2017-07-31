@@ -30,7 +30,7 @@ class XAQueryEvents:
     def OnReceiveData(self, szTrCode):
         print("ReceiveData")
         XAQueryEvents.queryState = 1
-    def OnReceiveMessage(self, systemError, mesageCode, message):
+    def OnReceiveMessage(self, systemError, messageCode, message):
         print("ReceiveMessage")
 
 
@@ -39,7 +39,7 @@ class XAQuery_t1305():
     
     def __init__(self):
         self.event  = win32com.client.DispatchWithEvents("XA_DataSet.XAQuery", XAQueryEvents)
-        self.event.parent = proxy(self)
+        #self.event.parent = proxy(self)
         self.flag = False
         self.event.LoadFromResFile("C:\\eBEST\\xingAPI\\Res\\t1305.res")
     
@@ -47,18 +47,18 @@ class XAQuery_t1305():
         self.event.Request(bNext)
         self.flag = True
         while self.flag:
-        pythoncom.PumpWaitingMessages()
+            pythoncom.PumpWaitingMessages()
     
-    def SetFieldData(self, market, choice):
+    def SetFieldData(self, shcode):
         self.event.SetFieldData('t1305InBlock','shcode', 0, shcode) # 종목코드
         self.event.SetFieldData('t1305InBlock','dwmcode', 0, "1") # 일주월구분
         self.event.SetFieldData('t1305InBlock','cnt', 0, "1") # 날짜
 
     def GetFieldData(self,szBlockName,szFieldName,nOccur=-1):
         if nOccur == -1:
-        return self.event.GetFieldData(szBlockName,szFieldName)
+            return self.event.GetFieldData(szBlockName,szFieldName)
         else:
-        return self.event.GetFieldData(szBlockName,szFieldName,nOccur)
+            return self.event.GetFieldData(szBlockName,szFieldName,nOccur)
     
     def OnReceive(self):
         self.dataReturn = [] # List
@@ -93,7 +93,7 @@ instXASession = win32com.client.DispatchWithEvents("XA_Session.XASession", XASes
 instXASession.ConnectServer("hts.ebestsec.co.kr", 20001)
 instXASession.Login(id, passwd, cert_passwd, 0, 0)
 
-while XASessionEvents.login_state == 0:
+while XASessionEvents.logInState == 0:
     pythoncom.PumpWaitingMessages()
 
 # ----------------------------------------------------------------------------
@@ -105,7 +105,7 @@ instXAQueryT1833.ResFileName = "C:\\eBEST\\xingAPI\\Res\\t1833.res"
 sFile = "C:\\eBEST\\xingAPI\\Res\\ConditionToApi_NEW.ADF"
 instXAQueryT1833.RequestService("t1833", sFile)
 
-while XAQueryEvents.query_state == 0:
+while XAQueryEvents.queryState == 0:
     pythoncom.PumpWaitingMessages()
 
 count = instXAQueryT1833.GetBlockCount("t1833OutBlock1")
@@ -126,7 +126,7 @@ for i in range(count):
     dataList.append(data)
 
 stock = pd.DataFrame(dataList, columns=['종목코드', '종목명', '구분(5:하락, 2:상승)', '전일대비', '현재가', '등락율', '거래량', '연속봉수'])
-print("//종목 정보 출력")
+#print("//종목 정보 출력")
 print(stock)
 
 # ----------------------------------------------------------------------------
@@ -135,10 +135,15 @@ print(stock)
 
 # 1. TR코드 t1305로 종목코드의 기준일자(전일), 시가, 고가, 저가, 종가, 거래대금, 시가총액을 조회
 
-j=0
-p_dataList = []
+#print("가격정보 연동 시작")
 
-print("가격정보 연동 시작")
+def GetData(shcode):
+    XAQuery = XAQuery_t1305()
+    XAQuery.SetFieldData(shcode)
+    XAQuery.Request()
+    return XAQuery.dataReturn
+
+p_dataList = []
 
 for index, row in stock.iterrows():
 
@@ -146,23 +151,21 @@ for index, row in stock.iterrows():
 # 종목수만큼 object를 생성하고, eBest api 호출 --> 데이터를 포함한 object list 생성
 # object list를 loop 돌면서 데이터를 추출하여, 데이터프레임을 생성함
 
-XAQuery = xing.XAQuery_t3341()
-XAQuery.SetFieldData(market, choice)
-XAQuery.Request()
+    if __name__ == '__main__':
+        data = GetData(row.ix[0])
+        price = DataFrame(data, columns=['순서', '종목코드', '일자', '시가', '고가', '저가', '종가', '거래대금', '시가총액'])
 
-time.sleep(1)
+    time.sleep(1)
 
-price = pd.DataFrame(p_dataList, columns=['순서', '종목코드', '일자', '시가', '고가', '저가', '종가', '거래대금', '시가총액'])
+#price = pd.DataFrame(p_dataList, columns=['순서', '종목코드', '일자', '시가', '고가', '저가', '종가', '거래대금', '시가총액'])
 print(price)
-'''
-
 
 '''
-# 3. stock dataframe과 종목코드를 key로 merge
-selection = pd.merge(stock, price, on='shcode', how='inner')
+3. stock dataframe과 종목코드를 key로 merge
+#selection = pd.merge(stock, price, on='shcode', how='inner')
 
 # ----------------------------------------------------------------------------
 # merge한 데이터프레임을 파일로 생성
 # ----------------------------------------------------------------------------
-selection.to_csv('selection.csv', index=False)
+#selection.to_csv('selection.csv', index=False)
 '''
