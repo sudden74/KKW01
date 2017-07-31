@@ -139,8 +139,11 @@ print(stock)
 
 def GetData(shcode):
     XAQuery = XAQuery_t1305()
+    print(shcode)
     XAQuery.SetFieldData(shcode)
+    print("setfielddata")
     XAQuery.Request()
+    print("request")
     return XAQuery.dataReturn
 
 p_dataList = []
@@ -150,9 +153,10 @@ for index, row in stock.iterrows():
 # XAQuery object는 종목코드만큼 생성해야 함
 # 종목수만큼 object를 생성하고, eBest api 호출 --> 데이터를 포함한 object list 생성
 # object list를 loop 돌면서 데이터를 추출하여, 데이터프레임을 생성함
-
+    print("loop 시작")
     if __name__ == '__main__':
         data = GetData(row.ix[0])
+        print(data)
         price = DataFrame(data, columns=['순서', '종목코드', '일자', '시가', '고가', '저가', '종가', '거래대금', '시가총액'])
 
     time.sleep(1)
