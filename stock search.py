@@ -36,31 +36,35 @@ class XAQueryEvents:
 
 # T1305 호출을 위한 class
 class XAQuery_t1305():
-    
+
     def __init__(self):
         self.event  = win32com.client.DispatchWithEvents("XA_DataSet.XAQuery", XAQueryEvents)
         #self.event.parent = proxy(self)
         self.flag = False
         self.event.LoadFromResFile("C:\\eBEST\\xingAPI\\Res\\t1305.res")
-    
+
     def Request(self,bNext=False):
+        print("request called")
         self.event.Request(bNext)
+        print("request called 2")
         self.flag = True
+        print("request called 3")
         while self.flag:
             pythoncom.PumpWaitingMessages()
-    
+        print("request called 4")
+
     def SetFieldData(self, shcode):
         self.event.SetFieldData('t1305InBlock','shcode', 0, shcode) # 종목코드
         self.event.SetFieldData('t1305InBlock','dwmcode', 0, "1") # 일주월구분
         self.event.SetFieldData('t1305InBlock','cnt', 0, "1") # 날짜
 
     def GetFieldData(self,szBlockName,szFieldName,nOccur=-1):
+        print("Get Field Data")
         if nOccur == -1:
             return self.event.GetFieldData(szBlockName,szFieldName)
         else:
             return self.event.GetFieldData(szBlockName,szFieldName,nOccur)
-    
-    def OnReceive(self):
+
         self.dataReturn = [] # List
         self.idx = self.event.GetFieldData('t1305OutBlock','idx',0)
 
