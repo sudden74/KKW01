@@ -1,6 +1,7 @@
 import pythoncom
 import win32com.client
 import pandas as pd
+import sys
 
 class XAQueryEvents:
     queryState = 0
@@ -17,6 +18,7 @@ def getData():
 
     instXAQueryT1833 = win32com.client.DispatchWithEvents("XA_DataSet.XAQuery", XAQueryEvents)
     instXAQueryT1833.ResFileName = "C:\\eBEST\\xingAPI\\Res\\t1833.res"
+    print("t1833 reference count (before): " + str(sys.getrefcount(XAQueryEvents)))
 
     sFile = "C:\\eBEST\\xingAPI\\Res\\ConditionToApi_NEW.ADF"
     instXAQueryT1833.RequestService("t1833", sFile)
@@ -45,4 +47,6 @@ def getData():
     #print("//종목 정보 출력")
     #print(stock)
     #stock.to_csv('T1833.csv')
+    print("t1833  reference count (after): " + str(sys.getrefcount(XAQueryEvents)))
     return stock
+

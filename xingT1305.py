@@ -1,24 +1,11 @@
 import pythoncom
 import win32com.client
 import pandas as pd
-
-class XASessionEvents:
-    logInState = 0
-    def OnLogin(self, code, msg):
-        print("OnLogin method is called")
-        print(str(code))
-        print(str(msg))
-        if str(code) == '0000':
-            XASessionEvents.logInState = 1
-
-    def OnLogout(self):
-        print("OnLogout method is called")
-
-    def OnDisconnect(self):
-        print("OnDisconnect method is called")
+import sys
 
 class XAQueryEvents:
     queryState = 0
+
     def OnReceiveData(self, szTrCode):
         print("ReceiveData")
         XAQueryEvents.queryState = 1
@@ -30,8 +17,19 @@ class XAQueryEvents:
 def getData(shcode):
     
     print(shcode)
+    '''
+        # 변수 초기화 문제는 아님
+            date = ''
+            open = 0
+            high = 0
+            low = 0
+            close = 0
+            value = 0
+            marketcap = 0
+    '''
     instXAQueryT1305 = win32com.client.DispatchWithEvents("XA_DataSet.XAQuery", XAQueryEvents)
     instXAQueryT1305.ResFileName = "C:\\eBEST\\xingAPI\\Res\\t1305.res"
+    print(shcode + " reference count (before): " + str(sys.getrefcount(XAQueryEvents)))
 
     instXAQueryT1305.SetFieldData("t1305InBlock", "shcode", 0, shcode)  # 종목코드
     instXAQueryT1305.SetFieldData("t1305InBlock", "dwmcode", 0, "1")  # 일주월구분
@@ -69,3 +67,7 @@ def getData(shcode):
     #print(stock)
     #stock.to_csv('T1305.csv')
     return price
+
+    del instXAQueryT1305
+
+    print(shcode + " reference count (after): " + str(sys.getrefcount(XAQueryEvents)))
