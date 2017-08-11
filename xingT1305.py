@@ -9,6 +9,7 @@ class XAQueryEvents:
     def OnReceiveData(self, szTrCode):
         print("ReceiveData")
         XAQueryEvents.queryState = 1
+
     def OnReceiveMessage(self, systemError, messageCode, message):
         print("ReceiveMessage")
 

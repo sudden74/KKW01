@@ -16,8 +16,11 @@ class XAQueryEvents:
 # ----------------------------------------------------------------------------
 def getData():
 
+    print("t1833 reference count (before create): " + str(sys.getrefcount(XAQueryEvents)))
+
     instXAQueryT1833 = win32com.client.DispatchWithEvents("XA_DataSet.XAQuery", XAQueryEvents)
     instXAQueryT1833.ResFileName = "C:\\eBEST\\xingAPI\\Res\\t1833.res"
+
     print("t1833 reference count (before): " + str(sys.getrefcount(XAQueryEvents)))
 
     sFile = "C:\\eBEST\\xingAPI\\Res\\ConditionToApi_NEW.ADF"
